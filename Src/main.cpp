@@ -93,5 +93,52 @@ int main() {
     writer2.save("arena_map_2_after_resample.ppm");
     std::cout << "Localization cycle complete!" << std::endl;
 
+
+    // ==========================================
+    // --- FRAME 2: THE ROBOT DRIVES FORWARD ---
+    // ==========================================
+    std::cout << "\nSimulating Robot Movement..." << std::endl;
+
+    // 1. Physically move the "Real" Robot forward by 0.5 meters
+    double drive_dist = 0.5;
+    double drive_yaw = 0.0; // Driving straight, no turning
+    robot_start_x_m += drive_dist * std::cos(robot_start_yaw);
+    robot_start_y_m += drive_dist * std::sin(robot_start_yaw);
+    robot_start_yaw += drive_yaw;
+
+    // 2. Tell the MCL engine that we moved
+    // Notice we are passing the 'resampled_cloud' from the previous step!
+    moveParticles(resampled_cloud, drive_dist, drive_yaw);
+
+    // 3. Take a brand new ToF sensor reading at this new location
+    double new_actual_reading = calculateRayIntersection(robot_start_x_m, robot_start_y_m, robot_start_yaw, game_field);
+
+    // 4. Weight and Resample the moved cloud based on the new reading
+    double new_weight_sum = 0.0;
+    for (auto& p : resampled_cloud) {
+        double p_hit_dist = calculateRayIntersection(p.x, p.y, p.theta, game_field);
+        p.weight = calculateParticleLikelihood(p_hit_dist, new_actual_reading, TOF_SENSOR_NOISE_M);
+        new_weight_sum += p.weight;
+    }
+
+    if (new_weight_sum > 0.0) {
+        for (auto& p : resampled_cloud) { p.weight /= new_weight_sum; }
+    }
+
+    std::vector<Particle> final_cloud = resampleParticles(resampled_cloud);
+
+    // 5. Draw the final frame
+    PPMWriter writer3(1000, 500);
+    for (const auto& w : game_field.walls) { writer3.drawWall(w); }
+    writer3.drawRobot(robot_start_x_m, robot_start_y_m, robot_start_yaw);
+
+    // Draw the newly moved and tightened cloud
+    for (const auto& p : final_cloud) {
+        writer3.drawParticle(p.x, p.y);
+    }
+
+    writer3.save("arena_map_3_after_movement.ppm");
+    std::cout << "Movement cycle complete! Check image 3." << std::endl;
+
     return 0;
 }

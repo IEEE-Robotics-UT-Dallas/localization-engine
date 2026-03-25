@@ -106,3 +106,30 @@ std::vector<Particle> resampleParticles(const std::vector<Particle>& old_particl
 
     return new_particles;
 }
+
+void moveParticles(std::vector<Particle>& particles, double distance_m, double delta_yaw_rad) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    // Define the wheel slip noise (Standard Deviation)
+    // Example: +/- 2cm of slip per movement, +/- 3 degrees of rotation drift
+    std::normal_distribution<double> trans_noise(0.0, 0.02);
+    std::normal_distribution<double> rot_noise(0.0, 0.052); // ~3 degrees in radians
+
+    for (auto& p : particles) {
+        // Add random mechanical noise to this specific movement command
+        double noisy_dist = distance_m + trans_noise(gen);
+        double noisy_yaw = delta_yaw_rad + rot_noise(gen);
+
+        // Calculate the new X and Y based on the direction the particle is CURRENTLY facing
+        p.x += noisy_dist * std::cos(p.theta);
+        p.y += noisy_dist * std::sin(p.theta);
+
+        // Apply the rotation
+        p.theta += noisy_yaw;
+
+        // Keep the angle strictly between -PI and PI so our math doesn't overflow later
+        while (p.theta > M_PI) p.theta -= 2.0 * M_PI;
+        while (p.theta < -M_PI) p.theta += 2.0 * M_PI;
+    }
+}
