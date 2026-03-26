@@ -38,6 +38,17 @@ target_include_directories(particle_filter_node PUBLIC
         ${EIGEN3_INCLUDE_DIRS} # <-- NEW: Include Eigen's math headers
 )
 
+# Install the Python bridge script from the NEW local scripts folder
+install(PROGRAMS
+        scripts/tof_bridge.py
+        DESTINATION lib/${PROJECT_NAME}
+)
+
+# Keep your launch install as is
+install(DIRECTORY launch
+        DESTINATION share/${PROJECT_NAME}
+)
+
 ament_target_dependencies(particle_filter_node rclcpp)
 
 # <-- NEW: Link Eigen to your node

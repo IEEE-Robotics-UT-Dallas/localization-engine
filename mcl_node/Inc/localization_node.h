@@ -41,6 +41,11 @@ void tofArrayCallback(const std_msgs::msg::Float32MultiArray::SharedPtr msg);
 
     // The Ear for the ToF sensor
     rclcpp::Subscription<sensor_msgs::msg::Range>::SharedPtr tof_front_sub_;
+
+void initialPoseCallback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
+	rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initial_pose_sub_;
+
 };
+
 
 #endif // LOCALIZATION_NODE_H
