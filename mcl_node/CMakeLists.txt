@@ -12,6 +12,7 @@ find_package(Eigen3 REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 # --- Tell CMake to look inside the Src/ folder ---
 add_executable(particle_filter_node
         Src/main.cpp
@@ -29,6 +30,7 @@ ament_target_dependencies(particle_filter_node
         geometry_msgs
         nav_msgs
         sensor_msgs
+        visualization_msgs
 )
 target_link_libraries(particle_filter_node Eigen3::Eigen)
 

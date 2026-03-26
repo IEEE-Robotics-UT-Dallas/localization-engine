@@ -24,22 +24,28 @@ class SerialBridge(Node):
         self.timer = self.create_timer(0.01, self.read_serial)
 
     def read_serial(self):
+        # NEW: If the buffer is backed up with more than 500 characters,
+        # wipe it so we only get the 'freshest' data.
+        if self.serial_port.in_waiting > 500:
+            self.serial_port.reset_input_buffer()
+            self.get_logger().warn("Serial buffer overflow! Flushing for fresh data...")
+            return
+
         if self.serial_port.in_waiting > 0:
             try:
                 # 1. Read the raw line
-                raw_line = self.serial_port.readline().decode('utf-8').strip()
-
+                raw_line = self.serial_port.readline().decode('utf-8', errors='ignore').strip()
+                
                 # DEBUG: See exactly what the STM32 sent
                 self.get_logger().info(f"RAW: {raw_line}")
 
-                # 2. Match your printf format
-                match = re.search(r'TOF1:(\d+)\s+TOF2:(\d+)\s+TOF3:(\d+)\s+TOF4:(\d+)\s+TOF5:(\d+)', raw_line)
-
+                # This looks for the pattern anywhere in the string, even if the line started mid-sentence
+                match = re.search(r'TOF1:(\d+).*?TOF2:(\d+).*?TOF3:(\d+).*?TOF4:(\d+).*?TOF5:(\d+)', raw_line)
                 if match:
                     # 3. Convert mm to meters
                     distances = [float(match.group(i)) / 1000.0 for i in range(1, 6)]
 
-                # DEBUG: See the processed meters
+                    # DEBUG: See the processed meters
                     self.get_logger().info(f"METERS: {distances}")
 
                     msg = Float32MultiArray()
@@ -54,7 +60,10 @@ class SerialBridge(Node):
 def main(args=None):
     rclpy.init(args=args)
     bridge = SerialBridge()
-    rclpy.spin(bridge)
+    try:
+        rclpy.spin(bridge)
+    except KeyboardInterrupt:
+        pass
     bridge.destroy_node()
     rclpy.shutdown()
 

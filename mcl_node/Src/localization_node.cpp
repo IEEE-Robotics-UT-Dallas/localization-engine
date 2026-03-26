@@ -21,7 +21,16 @@ LocalizationNode::LocalizationNode() : Node("particle_filter_node") {
     particle_cloud_ = initializeParticles(start_x, start_y, start_yaw);
     RCLCPP_INFO(this->get_logger(), "Spawned %zu particles successfully.", particle_cloud_.size());
 
-    // Initialize Publisher
+	// Initialize Publishers
+    particle_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("/particle_cloud", 10);
+    map_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("/arena_map", 10);
+
+    // Publish the map every 1 second
+    map_timer_ = this->create_wall_timer(
+        std::chrono::seconds(1),
+        std::bind(&LocalizationNode::publishMap, this)
+    );
+
     particle_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("/particle_cloud", 10);
 
     // Initialize Subscribers
@@ -39,6 +48,8 @@ LocalizationNode::LocalizationNode() : Node("particle_filter_node") {
         std::chrono::milliseconds(100),
         std::bind(&LocalizationNode::publishParticles, this)
     );
+
+
 }
 
 // ==============================================================================
@@ -137,4 +148,46 @@ void LocalizationNode::initialPoseCallback(const geometry_msgs::msg::PoseWithCov
 
     // Re-initialize the cloud at this specific point
     particle_cloud_ = initializeParticles(x, y, yaw);
+}
+
+void LocalizationNode::publishMap() {
+    auto marker = visualization_msgs::msg::Marker();
+    marker.header.frame_id = "map";
+    marker.header.stamp = this->get_clock()->now();
+    marker.ns = "arena_walls";
+    marker.id = 0;
+
+	marker.pose.orientation.w = 1.0;
+
+    // We want to draw a series of unconnected lines
+    marker.type = visualization_msgs::msg::Marker::LINE_LIST;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+
+    // Line thickness
+    marker.scale.x = 0.05;
+
+    // Color: Bright Blue (R: 0, G: 0.5, B: 1.0, Alpha: 1.0)
+    marker.color.a = 1.0;
+    marker.color.r = 0.0;
+    marker.color.g = 0.5;
+    marker.color.b = 1.0;
+
+    // Loop through your math engine's map and add the coordinates
+    for (const auto& wall : game_field_.walls) {
+        geometry_msgs::msg::Point p_start;
+        p_start.x = wall.start_point.x();
+        p_start.y = wall.start_point.y();
+        p_start.z = 0.0;
+
+        geometry_msgs::msg::Point p_end;
+        p_end.x = wall.end_point.x();
+        p_end.y = wall.end_point.y();
+        p_end.z = 0.0;
+
+        // LINE_LIST requires points in pairs (Start, End, Start, End...)
+        marker.points.push_back(p_start);
+        marker.points.push_back(p_end);
+    }
+
+    map_pub_->publish(marker);
 }
