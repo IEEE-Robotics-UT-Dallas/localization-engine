@@ -44,6 +44,10 @@ LocalizationNode::LocalizationNode() : Node("particle_filter_node") {
         "/odom", 10, std::bind(&LocalizationNode::odomCallback, this, std::placeholders::_1)
     );
 
+	imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
+    "/imu/data", 10, std::bind(&LocalizationNode::imuCallback, this, std::placeholders::_1)
+	);
+
     // FIXED: Now listening for the Float32MultiArray on /tof_array
     tof_array_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
         "/tof_array", 10, std::bind(&LocalizationNode::tofArrayCallback, this, std::placeholders::_1)
@@ -137,14 +141,23 @@ void LocalizationNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg
 
     double delta_x = current_x - last_odom_x_;
     double delta_y = current_y - last_odom_y_;
-    double delta_yaw = current_yaw - last_odom_yaw_;
+    double delta_yaw = current_imu_yaw_ - last_imu_yaw_;
+
+    // Normalize the angle so it doesn't jump wildly when crossing 180 degrees
+    while (delta_yaw > M_PI) delta_yaw -= 2.0 * M_PI;
+    while (delta_yaw < -M_PI) delta_yaw += 2.0 * M_PI;
+
+    // Update the tracker for the next loop
+    last_imu_yaw_ = current_imu_yaw_;
+
+    if (std::abs(delta_x) > 0.001 || std::abs(delta_y) > 0.001 || std::abs(delta_yaw) > 0.001) {
+        double distance_m = std::hypot(delta_x, delta_y);
 
     while (delta_yaw > M_PI) delta_yaw -= 2.0 * M_PI;
     while (delta_yaw < -M_PI) delta_yaw += 2.0 * M_PI;
 
     last_odom_x_ = current_x;
     last_odom_y_ = current_y;
-    last_odom_yaw_ = current_yaw;
 
     if (std::abs(delta_x) > 0.001 || std::abs(delta_y) > 0.001 || std::abs(delta_yaw) > 0.001) {
         double distance_m = std::hypot(delta_x, delta_y);
@@ -270,4 +283,19 @@ void LocalizationNode::publishMapToOdom(const geometry_msgs::msg::Pose& best_pos
     t.transform = tf2::toMsg(map_to_odom);
 
     tf_broadcaster_->sendTransform(t);
+}
+
+void LocalizationNode::imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg) {
+    // Extract the quaternion
+    double q_z = msg->orientation.z;
+    double q_w = msg->orientation.w;
+
+    // Convert quaternion to Euler Yaw (assuming flat ground, roll and pitch are 0)
+    current_imu_yaw_ = 2.0 * std::atan2(q_z, q_w);
+
+    // If this is the very first reading, initialize our tracking variable
+    if (first_imu_) {
+        last_imu_yaw_ = current_imu_yaw_;
+        first_imu_ = false;
+    }
 }

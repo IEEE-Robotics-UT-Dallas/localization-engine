@@ -14,6 +14,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <sensor_msgs/msg/imu.hpp>
 
 class LocalizationNode : public rclcpp::Node {
 public:
@@ -24,6 +25,7 @@ private:
     void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
     void tofArrayCallback(const std_msgs::msg::Float32MultiArray::SharedPtr msg);
     void initialPoseCallback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
+	void imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg);
 
     // NEW: The map publishing function declaration
     void publishMap();
@@ -45,6 +47,8 @@ private:
     rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr tof_array_sub_;
     rclcpp::Subscription<sensor_msgs::msg::Range>::SharedPtr tof_front_sub_;
     rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initial_pose_sub_;
+	rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
+
 
     // NEW: The map publisher and timer declarations
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr map_pub_;
@@ -56,7 +60,9 @@ private:
     double last_odom_yaw_ = 0.0;
     double dist_since_last_update_ = 0.0;
     double yaw_since_last_update_ = 0.0;
-
+	bool first_imu_ = true;
+	double current_imu_yaw_ = 0.0;
+	double last_imu_yaw_ = 0.0;
 };
 
 #endif // LOCALIZATION_NODE_H
