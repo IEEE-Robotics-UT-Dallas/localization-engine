@@ -6,15 +6,24 @@
 #include "mcl.h" // For calculateRayIntersection and calculateParticleLikelihood
 #include <cmath>
 
-// The physical blueprint of your 5 sensors: [0]FL, [1]FR, [2]L, [3]R, [4]B
-// Hidden safely inside this source file!
-const SensorMount TOF_MOUNTS[5] = {
-    {0.152,  0.05,   25.0 * (M_PI / 180.0)},
-    {0.152, -0.05,  -25.0 * (M_PI / 180.0)},
-    {0.0,    0.152,  M_PI / 2.0},
-    {0.0,   -0.152, -M_PI / 2.0},
-    {-0.152, 0.0,    M_PI}
-};
+    // The physical blueprint of the 5 sensors (Center of Wheels = Origin)
+    // Order: [0]Right, [1]Back-Right, [2]Back-Center, [3]Back-Left, [4]Left
+    const SensorMount TOF_MOUNTS[5] = {
+        // TOF 1: Right Side (Pointing -90 degrees)
+        {-0.0003, -0.0757, -M_PI / 2.0},
+
+        // TOF 2: Back-Right (Fanned outwards towards the right)
+        {-0.0901, -0.0272, -(M_PI - (11.5 * M_PI / 180.0))},
+
+        // TOF 3: Back-Center (Pointing straight back, 180 degrees)
+        {-0.0934,  0.0,     M_PI},
+
+        // TOF 4: Back-Left (Fanned outwards towards the left)
+        {-0.0901,  0.0272,  (M_PI - (11.5 * M_PI / 180.0))},
+
+        // TOF 5: Left Side (Pointing +90 degrees)
+        {-0.0003,  0.0757,  M_PI / 2.0}
+    };
 
 void applyToFMeasurement(std::vector<Particle>& particles, const std::vector<float>& tof_readings, const ArenaMap& map) {
     double sensor_noise_std = 0.1;
