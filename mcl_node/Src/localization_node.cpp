@@ -24,7 +24,14 @@ LocalizationNode::LocalizationNode() : Node("particle_filter_node") {
 	// Initialize Publishers
     particle_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("/particle_cloud", 10);
     map_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("/arena_map", 10);
+	// 1. Initialize the Broadcaster
+	tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
+	// 2. Setup the 5 ToF outlets
+	for (int i = 0; i < 5; ++i) {
+	    std::string topic_name = "tof_" + std::to_string(i);
+	    tof_publishers_[i] = this->create_publisher<sensor_msgs::msg::Range>(topic_name, 10);
+	}
     // Publish the map every 1 second
     map_timer_ = this->create_wall_timer(
         std::chrono::seconds(1),
@@ -56,9 +63,9 @@ LocalizationNode::LocalizationNode() : Node("particle_filter_node") {
 // ==============================================================================
 // FIXED: std_msgs instead of std::msgs
 void LocalizationNode::tofArrayCallback(const std_msgs::msg::Float32MultiArray::SharedPtr msg) {
-
-	if (dist_since_last_update_ < 0.05 && yaw_since_last_update_ < 0.1) {
-        return; // Ignore the sensor data, we haven't moved enough to care!
+    // Keep your movement check
+    if (dist_since_last_update_ < 0.05 && yaw_since_last_update_ < 0.1) {
+        return;
     }
 
     if (msg->data.size() != 5) {
@@ -66,19 +73,49 @@ void LocalizationNode::tofArrayCallback(const std_msgs::msg::Float32MultiArray::
         return;
     }
 
-    // Convert the ROS 2 Float32MultiArray into a standard C++ std::vector
+    // --- NEW: PART A (The Nav2 Splitter) ---
+    for (size_t i = 0; i < 5; ++i) {
+        auto range_msg = sensor_msgs::msg::Range();
+        range_msg.header.stamp = this->get_clock()->now();
+        range_msg.header.frame_id = "tof_sensor_" + std::to_string(i); // Matches your Launch file
+        range_msg.radiation_type = sensor_msgs::msg::Range::INFRARED;
+        range_msg.field_of_view = 0.436;
+        range_msg.min_range = 0.02;
+        range_msg.max_range = 2.0;
+        range_msg.range = msg->data[i];
+
+        tof_publishers_[i]->publish(range_msg);
+    }
+
+    // --- YOUR EXISTING LOGIC ---
     std::vector<float> tof_readings(msg->data.begin(), msg->data.end());
-
-    // 1. Update the weights using your new dedicated ToF file
     applyToFMeasurement(particle_cloud_, tof_readings, game_field_);
-
-    // 2. Resample the cloud
     particle_cloud_ = resampleParticles(particle_cloud_);
 
-	dist_since_last_update_ = 0.0;
-    yaw_since_last_update_ = 0.0;
-} // FIXED: Removed the stray brace and duplicate resample code that was here!
+    // --- NEW: PART B (The Nav2 Sync) ---
+    // Calculate the "Best" pose (average of all particles) to send to Nav2
+    double avg_x = 0, avg_y = 0, sum_sin = 0, sum_cos = 0;
+    for (const auto& p : particle_cloud_) {
+        avg_x += p.x;
+        avg_y += p.y;
+        sum_sin += std::sin(p.theta);
+        sum_cos += std::cos(p.theta);
+    }
 
+    geometry_msgs::msg::Pose best_pose;
+    best_pose.position.x = avg_x / particle_cloud_.size();
+    best_pose.position.y = avg_y / particle_cloud_.size();
+    double avg_theta = std::atan2(sum_sin, sum_cos);
+    best_pose.orientation.z = std::sin(avg_theta / 2.0);
+    best_pose.orientation.w = std::cos(avg_theta / 2.0);
+
+    // Now tell Nav2 where we are relative to the drifting Odometry
+    // Assuming you store the latest odom in a member variable:
+    // publishMapToOdom(best_pose, latest_odom_msg_);
+
+    dist_since_last_update_ = 0.0;
+    yaw_since_last_update_ = 0.0;
+}
 // ==============================================================================
 // 3. THE ODOMETRY CALLBACK (The Prediction Step)
 // ==============================================================================
@@ -210,4 +247,27 @@ void LocalizationNode::publishMap() {
     }
 
     map_pub_->publish(marker);
+}
+
+void LocalizationNode::publishMapToOdom(const geometry_msgs::msg::Pose& best_pose,
+                                        const nav_msgs::msg::Odometry& current_odom) {
+    // 1. Map -> Robot (The Truth from your Particles)
+    tf2::Transform map_to_base;
+    tf2::fromMsg(best_pose, map_to_base);
+
+    // 2. Odom -> Robot (The Drift from your Encoders)
+    tf2::Transform odom_to_base;
+    tf2::fromMsg(current_odom.pose.pose, odom_to_base);
+
+    // 3. Map -> Odom calculation (The Correction)
+    tf2::Transform map_to_odom = map_to_base * odom_to_base.inverse();
+
+    // 4. Send the transform
+    geometry_msgs::msg::TransformStamped t;
+    t.header.stamp = this->get_clock()->now();
+    t.header.frame_id = "map";
+    t.child_frame_id = "odom";
+    t.transform = tf2::toMsg(map_to_odom);
+
+    tf_broadcaster_->sendTransform(t);
 }

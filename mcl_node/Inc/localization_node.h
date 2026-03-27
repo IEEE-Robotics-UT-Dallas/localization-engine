@@ -10,7 +10,10 @@
 #include "map.h"
 #include "particle.h"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
-#include <visualization_msgs/msg/marker.hpp> // <-- Added Marker include
+#include <visualization_msgs/msg/marker.hpp>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2/LinearMath/Transform.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 class LocalizationNode : public rclcpp::Node {
 public:
@@ -27,8 +30,15 @@ private:
 
     ArenaMap game_field_;
     std::vector<Particle> particle_cloud_;
+	// Tools for Nav2 Communication
+	std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+	std::array<rclcpp::Publisher<sensor_msgs::msg::Range>::SharedPtr, 5> tof_publishers_;
 
-    rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr particle_pub_;
+	// The calculation function
+	void publishMapToOdom(const geometry_msgs::msg::Pose& best_pose,
+                      const nav_msgs::msg::Odometry& current_odom);
+
+	rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr particle_pub_;
     rclcpp::TimerBase::SharedPtr timer_;
 
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
