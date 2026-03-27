@@ -112,20 +112,21 @@ void LocalizationNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg
     if (std::abs(delta_x) > 0.001 || std::abs(delta_y) > 0.001 || std::abs(delta_yaw) > 0.001) {
         double distance_m = std::hypot(delta_x, delta_y);
 
-		// Project the movement vector onto the robot's heading
+        // Project the movement vector onto the robot's heading
         double direction_check = (delta_x * std::cos(last_odom_yaw_)) + (delta_y * std::sin(last_odom_yaw_));
 
         // If the projection is negative, the robot drove backward!
         if (direction_check < 0.0) {
             distance_m = -distance_m;
-		}
+        }
+
         moveParticles(particle_cloud_, distance_m, delta_yaw);
+
+        // --- FIXED: Trackers moved safely inside the scope using absolute values ---
+        dist_since_last_update_ += std::abs(distance_m);
+        yaw_since_last_update_ += std::abs(delta_yaw);
     }
-
-	dist_since_last_update_ += distance_m;
-    yaw_since_last_update_ += std::abs(delta_yaw);
 }
-
 // ==============================================================================
 // 4. THE PUBLISHER (Sending data to RViz)
 // ==============================================================================
