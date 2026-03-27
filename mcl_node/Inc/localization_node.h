@@ -54,6 +54,8 @@ private:
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr map_pub_;
     rclcpp::TimerBase::SharedPtr map_timer_;
 
+	nav_msgs::msg::Odometry latest_odom_msg_;
+
     bool first_odom_ = true;
     double last_odom_x_ = 0.0;
     double last_odom_y_ = 0.0;

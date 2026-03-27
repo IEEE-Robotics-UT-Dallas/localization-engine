@@ -22,6 +22,14 @@ def generate_launch_description():
             output='screen'
         ),
 
+        # 2b. The Python Odom Serial Bridge
+        Node(
+            package='localization_engine',
+            executable='odom_bridge.py',
+            name='odom_bridge',
+            output='screen'
+        ),
+
         # 3. RViz2
         Node(
             package='rviz2',

@@ -115,7 +115,7 @@ void LocalizationNode::tofArrayCallback(const std_msgs::msg::Float32MultiArray::
 
     // Now tell Nav2 where we are relative to the drifting Odometry
     // Assuming you store the latest odom in a member variable:
-    // publishMapToOdom(best_pose, latest_odom_msg_);
+     publishMapToOdom(best_pose, latest_odom_msg_);
 
     dist_since_last_update_ = 0.0;
     yaw_since_last_update_ = 0.0;
@@ -124,6 +124,14 @@ void LocalizationNode::tofArrayCallback(const std_msgs::msg::Float32MultiArray::
 // 3. THE ODOMETRY CALLBACK (The Prediction Step)
 // ==============================================================================
 void LocalizationNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
+
+	if (first_imu_) {
+        // Wait for the IMU to boot up and get an initial heading before we process movement!
+        return;
+    }
+    // Save this for the TF Broadcaster later
+    latest_odom_msg_ = *msg;
+
     double current_x = msg->pose.pose.position.x;
     double current_y = msg->pose.pose.position.y;
 
@@ -141,6 +149,8 @@ void LocalizationNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg
 
     double delta_x = current_x - last_odom_x_;
     double delta_y = current_y - last_odom_y_;
+
+    // Calculate heading change strictly from the IMU
     double delta_yaw = current_imu_yaw_ - last_imu_yaw_;
 
     // Normalize the angle so it doesn't jump wildly when crossing 180 degrees
@@ -149,13 +159,6 @@ void LocalizationNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg
 
     // Update the tracker for the next loop
     last_imu_yaw_ = current_imu_yaw_;
-
-    if (std::abs(delta_x) > 0.001 || std::abs(delta_y) > 0.001 || std::abs(delta_yaw) > 0.001) {
-        double distance_m = std::hypot(delta_x, delta_y);
-
-    while (delta_yaw > M_PI) delta_yaw -= 2.0 * M_PI;
-    while (delta_yaw < -M_PI) delta_yaw += 2.0 * M_PI;
-
     last_odom_x_ = current_x;
     last_odom_y_ = current_y;
 
@@ -172,7 +175,6 @@ void LocalizationNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg
 
         moveParticles(particle_cloud_, distance_m, delta_yaw);
 
-        // --- FIXED: Trackers moved safely inside the scope using absolute values ---
         dist_since_last_update_ += std::abs(distance_m);
         yaw_since_last_update_ += std::abs(delta_yaw);
     }

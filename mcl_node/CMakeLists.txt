@@ -43,6 +43,7 @@ target_include_directories(particle_filter_node PUBLIC
 # Install the Python bridge script from the NEW local scripts folder
 install(PROGRAMS
         scripts/tof_bridge.py
+        scripts/odom_bridge.py
         DESTINATION lib/${PROJECT_NAME}
 )
 
