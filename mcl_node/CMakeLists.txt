@@ -51,10 +51,6 @@ install(DIRECTORY launch
         DESTINATION share/${PROJECT_NAME}
 )
 
-ament_target_dependencies(particle_filter_node rclcpp)
-
-# <-- NEW: Link Eigen to your node
-target_link_libraries(particle_filter_node Eigen3::Eigen)
 
 install(TARGETS
         particle_filter_node

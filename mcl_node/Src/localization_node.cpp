@@ -127,6 +127,7 @@ void LocalizationNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg
         yaw_since_last_update_ += std::abs(delta_yaw);
     }
 }
+
 // ==============================================================================
 // 4. THE PUBLISHER (Sending data to RViz)
 // ==============================================================================
