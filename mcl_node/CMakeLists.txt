@@ -13,7 +13,12 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
-# --- Tell CMake to look inside the Src/ folder ---
+
+# --- NEW: Add the TF2 libraries ---
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
 add_executable(particle_filter_node
         Src/main.cpp
         Src/localization_node.cpp
@@ -24,13 +29,16 @@ add_executable(particle_filter_node
         Src/tof_sensor.cpp
 )
 
-# Link it all together
 ament_target_dependencies(particle_filter_node
         rclcpp
         geometry_msgs
         nav_msgs
         sensor_msgs
         visualization_msgs
+        # --- NEW: Link them to your node ---
+        tf2
+        tf2_ros
+        tf2_geometry_msgs
 )
 target_link_libraries(particle_filter_node Eigen3::Eigen)
 

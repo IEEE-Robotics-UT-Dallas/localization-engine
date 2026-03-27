@@ -115,7 +115,12 @@ void LocalizationNode::tofArrayCallback(const std_msgs::msg::Float32MultiArray::
 
     // Now tell Nav2 where we are relative to the drifting Odometry
     // Assuming you store the latest odom in a member variable:
-     publishMapToOdom(best_pose, latest_odom_msg_);
+if (!first_odom_) {
+        publishMapToOdom(best_pose, latest_odom_msg_);
+    } else {
+        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+            "Waiting for first Odometry reading before publishing TF...");
+    }
 
     dist_since_last_update_ = 0.0;
     yaw_since_last_update_ = 0.0;
