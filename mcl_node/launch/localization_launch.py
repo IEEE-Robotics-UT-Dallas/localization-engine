@@ -24,9 +24,10 @@ def generate_launch_description():
 
         # 3. RViz2
         Node(
-            package='localization_engine',
-            executable='tof_bridge.py',
-            name='serial_bridge',
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2',
             output='screen'
+            # (Optional) Add arguments here later to auto-load your specific RViz config file
         )
     ])

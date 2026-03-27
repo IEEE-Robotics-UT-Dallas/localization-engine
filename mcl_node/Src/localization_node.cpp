@@ -31,7 +31,6 @@ LocalizationNode::LocalizationNode() : Node("particle_filter_node") {
         std::bind(&LocalizationNode::publishMap, this)
     );
 
-    particle_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("/particle_cloud", 10);
 
     // Initialize Subscribers
     odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
@@ -57,6 +56,11 @@ LocalizationNode::LocalizationNode() : Node("particle_filter_node") {
 // ==============================================================================
 // FIXED: std_msgs instead of std::msgs
 void LocalizationNode::tofArrayCallback(const std_msgs::msg::Float32MultiArray::SharedPtr msg) {
+
+	if (dist_since_last_update_ < 0.05 && yaw_since_last_update_ < 0.1) {
+        return; // Ignore the sensor data, we haven't moved enough to care!
+    }
+
     if (msg->data.size() != 5) {
         RCLCPP_WARN(this->get_logger(), "Received malformed ToF array! Expected 5, got %zu", msg->data.size());
         return;
@@ -70,6 +74,9 @@ void LocalizationNode::tofArrayCallback(const std_msgs::msg::Float32MultiArray::
 
     // 2. Resample the cloud
     particle_cloud_ = resampleParticles(particle_cloud_);
+
+	dist_since_last_update_ = 0.0;
+    yaw_since_last_update_ = 0.0;
 } // FIXED: Removed the stray brace and duplicate resample code that was here!
 
 // ==============================================================================
@@ -104,8 +111,19 @@ void LocalizationNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg
 
     if (std::abs(delta_x) > 0.001 || std::abs(delta_y) > 0.001 || std::abs(delta_yaw) > 0.001) {
         double distance_m = std::hypot(delta_x, delta_y);
+
+		// Project the movement vector onto the robot's heading
+        double direction_check = (delta_x * std::cos(last_odom_yaw_)) + (delta_y * std::sin(last_odom_yaw_));
+
+        // If the projection is negative, the robot drove backward!
+        if (direction_check < 0.0) {
+            distance_m = -distance_m;
+		}
         moveParticles(particle_cloud_, distance_m, delta_yaw);
     }
+
+	dist_since_last_update_ += distance_m;
+    yaw_since_last_update_ += std::abs(delta_yaw);
 }
 
 // ==============================================================================

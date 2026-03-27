@@ -44,6 +44,9 @@ private:
     double last_odom_x_ = 0.0;
     double last_odom_y_ = 0.0;
     double last_odom_yaw_ = 0.0;
+    double dist_since_last_update_ = 0.0;
+    double yaw_since_last_update_ = 0.0;
+
 };
 
 #endif // LOCALIZATION_NODE_H
