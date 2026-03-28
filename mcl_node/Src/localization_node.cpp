@@ -19,16 +19,16 @@ LocalizationNode::LocalizationNode() : Node("particle_filter_node") {
     double start_y = game_field_.in2m(0, 6.5).y();
     double start_yaw = M_PI / 2.0;
 
-    particle_cloud_ = initializeParticles(start_x, start_y, start_yaw);
+//    particle_cloud_ = initializeParticles(start_x, start_y, start_yaw);
     RCLCPP_INFO(this->get_logger(), "Spawned %zu particles successfully.", particle_cloud_.size());
 
 	// Initialize Publishers
-    particle_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("/particle_cloud", 10);
+ //   particle_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("/particle_cloud", 10);
     map_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("/arena_map", 10);
 	// 1. Initialize the Broadcaster
 	tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
-	// 2. Setup the 5 ToF outlets
+/*	// 2. Setup the 5 ToF outlets
 	for (int i = 0; i < 5; ++i) {
 	    std::string topic_name = "tof_" + std::to_string(i);
 	    tof_publishers_[i] = this->create_publisher<sensor_msgs::msg::Range>(topic_name, 10);
@@ -39,26 +39,26 @@ LocalizationNode::LocalizationNode() : Node("particle_filter_node") {
         std::bind(&LocalizationNode::publishMap, this)
     );
 
-
+*/
     // Initialize Subscribers
 	odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
     	"/odometry/filtered", 10, std::bind(&LocalizationNode::odomCallback, this, std::placeholders::_1));
 
 
     // FIXED: Now listening for the Float32MultiArray on /tof_array
-    tof_array_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
-        "/tof_array", 10, std::bind(&LocalizationNode::tofArrayCallback, this, std::placeholders::_1)
-    );
+//    tof_array_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
+ //       "/tof_array", 10, std::bind(&LocalizationNode::tofArrayCallback, this, std::placeholders::_1)
+//    );
 
     // Initialize the Timer (The heartbeat that publishes the cloud at 10Hz)
-    timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(100),
-        std::bind(&LocalizationNode::publishParticles, this)
-    );
+//    timer_ = this->create_wall_timer(
+//        std::chrono::milliseconds(100),
+//        std::bind(&LocalizationNode::publishParticles, this)
+//    );
 
 
 }
-
+/*
 // ==============================================================================
 // 2. THE TOF ARRAY CALLBACK (The Update Step)
 // ==============================================================================
@@ -122,6 +122,7 @@ if (!first_odom_) {
     dist_since_last_update_ = 0.0;
     yaw_since_last_update_ = 0.0;
 }
+*/
 // ==============================================================================
 // 3. THE ODOMETRY CALLBACK (The Prediction Step)
 // ==============================================================================
