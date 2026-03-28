@@ -8,8 +8,10 @@ int main(int argc, char **argv) {
 
     ArenaMap arena;
 
-	arena.generateBoundaryGML("/ros2_ws/src/localization_engine/ieee_arena_boundary.gml");
-	arena.generatePGM("/ros2_ws/src/robot_nav/maps/my_map.pgm");
+	// Change these lines in main.cpp:
+	arena.generateBoundaryGML("/home/ieee/ros2_ws/src/localizationAlgorithm/ieee_arena_boundary.gml");
+	arena.generatePGM("/home/ieee/ros2_ws/src/robot_nav/maps/my_map.pgm");
+
 	// 2. Create the node
     auto node = std::make_shared<LocalizationNode>();
 

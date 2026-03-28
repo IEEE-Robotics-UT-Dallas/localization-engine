@@ -4,13 +4,19 @@ from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
-    # Get the path to the config file
-    pkg_dir = get_package_share_directory('localization_engine')
-    ekf_config_path = os.path.join(pkg_dir, 'config', 'ekf.yaml')
+    # Get the directory for mcl_node (now called localization_engine)
+    mcl_pkg_dir = get_package_share_directory('localization_engine')
+
+    # NEW: Get the directory for the separate efk_node package
+    try:
+        ekf_pkg_dir = get_package_share_directory('efk_node')
+        ekf_config_path = os.path.join(ekf_pkg_dir, 'config', 'ekf.yaml')
+    except:
+        # Fallback if the package name is different in your package.xml
+        ekf_config_path = "/home/ieee/ros2_ws/src/localizationAlgorithm/efk_node/config/ekf.yaml"
 
     return LaunchDescription([
-        # 1. The Map Generator & EKF Bridge (Your C++ Node)
-        # This MUST run to generate the .gml and .pgm files!
+        # 1. Map Generator (mcl_node)
         Node(
             package='localization_engine',
             executable='particle_filter_node',
@@ -18,7 +24,7 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # 2. The Robot Localization EKF Node
+        # 2. EKF Node (using the config from efk_node package)
         Node(
             package='robot_localization',
             executable='ekf_node',
@@ -27,7 +33,7 @@ def generate_launch_description():
             parameters=[ekf_config_path]
         ),
 
-        # 3. THE BRIDGE: Locks the Map to the Odom frame for Nav2
+        # 3. Static TF
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',

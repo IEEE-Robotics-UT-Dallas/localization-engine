@@ -57,7 +57,8 @@ install(PROGRAMS
 )
 
 # Keep your launch install as is
-install(DIRECTORY launch
+install(DIRECTORY
+        launch
         DESTINATION share/${PROJECT_NAME}
 )
 
