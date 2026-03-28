@@ -51,7 +51,8 @@ target_include_directories(particle_filter_node PUBLIC
 # Install the Python bridge script from the NEW local scripts folder
 install(PROGRAMS
         scripts/tof_bridge.py
-        scripts/coverage_client.py  # <-- ADD THIS LINE
+        scripts/coverage_client.py
+        scripts/master_sweeper.py
         DESTINATION lib/${PROJECT_NAME}
 )
 

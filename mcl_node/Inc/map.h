@@ -1,7 +1,3 @@
-//
-// Created by nokoru on 3/23/26.
-//
-
 #ifndef LOCALIZATIONALGORITHM_MAP_H
 #define LOCALIZATIONALGORITHM_MAP_H
 
@@ -22,7 +18,8 @@ public:
 
     ArenaMap();
 
-	void generateBoundaryGML(const std::string& filename);
+    void generateBoundaryGML(const std::string& filename);
+    void generatePGM(const std::string& filename); // <-- MAKE SURE THIS LINE IS HERE
 };
 
 #endif //LOCALIZATIONALGORITHM_MAP_H

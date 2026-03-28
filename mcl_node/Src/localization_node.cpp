@@ -15,9 +15,9 @@ LocalizationNode::LocalizationNode() : Node("particle_filter_node") {
 
     game_field_ = ArenaMap();
 
-    double start_x = game_field_.in2m(31.25, 0).x();
-    double start_y = game_field_.in2m(0, 6.5).y();
-    double start_yaw = M_PI / 2.0;
+ //   double start_x = game_field_.in2m(31.25, 0).x();
+ //   double start_y = game_field_.in2m(0, 6.5).y();
+ //   double start_yaw = M_PI / 2.0;
 
 //    particle_cloud_ = initializeParticles(start_x, start_y, start_yaw);
     RCLCPP_INFO(this->get_logger(), "Spawned %zu particles successfully.", particle_cloud_.size());

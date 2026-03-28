@@ -7,8 +7,10 @@ int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
 
     ArenaMap arena;
-	//arena.generateBoundaryGML("ieee_arena_boundary.gml");
-    // 2. Create the node
+
+	arena.generateBoundaryGML("/ros2_ws/src/localization_engine/ieee_arena_boundary.gml");
+	arena.generatePGM("/ros2_ws/src/robot_nav/maps/my_map.pgm");
+	// 2. Create the node
     auto node = std::make_shared<LocalizationNode>();
 
     // 3. Keep the node alive ("spinning") indefinitely to listen for sensor data
