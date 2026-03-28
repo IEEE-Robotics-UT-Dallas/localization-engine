@@ -1,10 +1,13 @@
 #include <rclcpp/rclcpp.hpp>
 #include "localization_node.h"
+#include <map.h>
 
 int main(int argc, char **argv) {
     // 1. Initialize the ROS 2 communications network
     rclcpp::init(argc, argv);
 
+    ArenaMap arena;
+	arena.generateBoundaryGML("ieee_arena_boundary.gml");
     // 2. Create the node
     auto node = std::make_shared<LocalizationNode>();
 

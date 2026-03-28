@@ -3,6 +3,7 @@
 #include "tof_sensor.h"
 #include <cmath>
 
+
 // ==============================================================================
 // 1. THE CONSTRUCTOR (Booting up the node)
 // ==============================================================================
@@ -40,13 +41,9 @@ LocalizationNode::LocalizationNode() : Node("particle_filter_node") {
 
 
     // Initialize Subscribers
-    odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-        "/odom", 10, std::bind(&LocalizationNode::odomCallback, this, std::placeholders::_1)
-    );
+	odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+    	"/odometry/filtered", 10, std::bind(&LocalizationNode::odomCallback, this, std::placeholders::_1));
 
-	imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-    "/imu/data", 10, std::bind(&LocalizationNode::imuCallback, this, std::placeholders::_1)
-	);
 
     // FIXED: Now listening for the Float32MultiArray on /tof_array
     tof_array_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
@@ -129,17 +126,13 @@ if (!first_odom_) {
 // 3. THE ODOMETRY CALLBACK (The Prediction Step)
 // ==============================================================================
 void LocalizationNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
-
-	if (first_imu_) {
-        // Wait for the IMU to boot up and get an initial heading before we process movement!
-        return;
-    }
-    // Save this for the TF Broadcaster later
+    // 1. Save this for Nav2's map->odom transform!
     latest_odom_msg_ = *msg;
 
     double current_x = msg->pose.pose.position.x;
     double current_y = msg->pose.pose.position.y;
 
+    // 2. This quaternion already contains your STM32 IMU heading!
     double q_z = msg->pose.pose.orientation.z;
     double q_w = msg->pose.pose.orientation.w;
     double current_yaw = 2.0 * std::atan2(q_z, q_w);
@@ -154,26 +147,19 @@ void LocalizationNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg
 
     double delta_x = current_x - last_odom_x_;
     double delta_y = current_y - last_odom_y_;
+    double delta_yaw = current_yaw - last_odom_yaw_;
 
-    // Calculate heading change strictly from the IMU
-    double delta_yaw = current_imu_yaw_ - last_imu_yaw_;
-
-    // Normalize the angle so it doesn't jump wildly when crossing 180 degrees
     while (delta_yaw > M_PI) delta_yaw -= 2.0 * M_PI;
     while (delta_yaw < -M_PI) delta_yaw += 2.0 * M_PI;
 
-    // Update the tracker for the next loop
-    last_imu_yaw_ = current_imu_yaw_;
     last_odom_x_ = current_x;
     last_odom_y_ = current_y;
+    last_odom_yaw_ = current_yaw;
 
     if (std::abs(delta_x) > 0.001 || std::abs(delta_y) > 0.001 || std::abs(delta_yaw) > 0.001) {
         double distance_m = std::hypot(delta_x, delta_y);
 
-        // Project the movement vector onto the robot's heading
         double direction_check = (delta_x * std::cos(last_odom_yaw_)) + (delta_y * std::sin(last_odom_yaw_));
-
-        // If the projection is negative, the robot drove backward!
         if (direction_check < 0.0) {
             distance_m = -distance_m;
         }
@@ -292,17 +278,3 @@ void LocalizationNode::publishMapToOdom(const geometry_msgs::msg::Pose& best_pos
     tf_broadcaster_->sendTransform(t);
 }
 
-void LocalizationNode::imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg) {
-    // Extract the quaternion
-    double q_z = msg->orientation.z;
-    double q_w = msg->orientation.w;
-
-    // Convert quaternion to Euler Yaw (assuming flat ground, roll and pitch are 0)
-    current_imu_yaw_ = 2.0 * std::atan2(q_z, q_w);
-
-    // If this is the very first reading, initialize our tracking variable
-    if (first_imu_) {
-        last_imu_yaw_ = current_imu_yaw_;
-        first_imu_ = false;
-    }
-}

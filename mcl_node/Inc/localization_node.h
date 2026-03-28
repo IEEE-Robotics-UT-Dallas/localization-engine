@@ -25,7 +25,6 @@ private:
     void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
     void tofArrayCallback(const std_msgs::msg::Float32MultiArray::SharedPtr msg);
     void initialPoseCallback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
-	void imuCallback(const sensor_msgs::msg::Imu::SharedPtr msg);
 
     // NEW: The map publishing function declaration
     void publishMap();
@@ -47,7 +46,6 @@ private:
     rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr tof_array_sub_;
     rclcpp::Subscription<sensor_msgs::msg::Range>::SharedPtr tof_front_sub_;
     rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initial_pose_sub_;
-	rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
 
 
     // NEW: The map publisher and timer declarations

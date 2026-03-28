@@ -14,7 +14,8 @@ class SerialBridge(Node):
 
         # OPEN THE USB PORT (You may need to change ttyUSB0 to ttyACM0 depending on the STM32)
         try:
-            self.serial_port = serial.Serial('/dev/ttyUSB0', 115200, timeout=1.0)
+            # Set a very short timeout so the loop doesn't hang if a byte is dropped
+            self.serial_port = serial.Serial('/dev/ttyUSB0', 115200, timeout=0.05)
             self.get_logger().info("Successfully connected to STM32!")
         except Exception as e:
             self.get_logger().error(f"Failed to open serial port: {e}")
@@ -40,7 +41,7 @@ class SerialBridge(Node):
                 self.get_logger().info(f"RAW: {raw_line}")
 
                 # This looks for the pattern anywhere in the string, even if the line started mid-sentence
-                match = re.search(r'TOF1:(\d+).*?TOF2:(\d+).*?TOF3:(\d+).*?TOF4:(\d+).*?TOF5:(\d+)', raw_line)
+                match = re.search(r'T1:(\d+).*?T2:(\d+).*?T3:(\d+).*?T4:(\d+).*?T5:(\d+)', raw_line)
                 if match:
                     # 3. Convert mm to meters
                     distances = [float(match.group(i)) / 1000.0 for i in range(1, 6)]

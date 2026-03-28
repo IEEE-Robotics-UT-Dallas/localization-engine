@@ -21,6 +21,8 @@ public:
     Eigen::Vector2d in2m(double x_inches, double y_inches);
 
     ArenaMap();
+
+	void generateBoundaryGML(const std::string& filename);
 };
 
 #endif //LOCALIZATIONALGORITHM_MAP_H
