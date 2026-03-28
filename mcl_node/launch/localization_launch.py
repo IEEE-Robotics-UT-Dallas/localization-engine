@@ -8,12 +8,12 @@ def generate_launch_description():
     pkg_dir = get_package_share_directory('localization_engine')
     ekf_config_path = os.path.join(pkg_dir, 'config', 'ekf.yaml') # 1. The C++ MCL Particle Filter Node
 
-        Node(
-            package='localization_engine',
-            executable='particle_filter_node',
-            name='mcl_node',
-            output='screen'
-        ),
+#        Node(
+#            package='localization_engine',
+#            executable='particle_filter_node',
+#            name='mcl_node',
+#            output='screen'
+#        ),
 
 
         Node(
@@ -33,6 +33,14 @@ def generate_launch_description():
 #            output='screen'
 #        ),
 
+    # 3. THE NEW BRIDGE: Locks the Map to the Odom frame
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='map_to_odom_tf',
+            # Arguments: X, Y, Z, Yaw, Pitch, Roll, Parent_Frame, Child_Frame
+            arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom']
+        ),
 
         # 3. RViz2
 #        Node(

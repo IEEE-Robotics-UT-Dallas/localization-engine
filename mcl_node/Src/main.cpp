@@ -7,7 +7,7 @@ int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
 
     ArenaMap arena;
-	arena.generateBoundaryGML("ieee_arena_boundary.gml");
+	//arena.generateBoundaryGML("ieee_arena_boundary.gml");
     // 2. Create the node
     auto node = std::make_shared<LocalizationNode>();
 
